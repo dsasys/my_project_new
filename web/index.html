@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A platform for AI startups and investors">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Startup Hub">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Startup Hub</title>
+  <link rel="manifest" href="manifest.json">
+
+  <script>
+    // The value below is injected by flutter build, do not touch.
+    const serviceWorkerVersion = "{{flutter_service_worker_version}}";
+  </script>
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js" defer></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <script>
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDg6QP2FBWAp0sxqegB40k1pTnw_c-kDng",
+      authDomain: "startuphubapp.firebaseapp.com",
+      projectId: "startuphubapp",
+      storageBucket: "startuphubapp.firebasestorage.app",
+      messagingSenderId: "411870907427",
+      appId: "1:411870907427:web:dd9fc217351d0895333596",
+      measurementId: "G-2EYBERMXQH"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+  </script>
+</head>
+<body>
+  <div id="loading">
+    Loading...
+  </div>
+  <script>
+    window.addEventListener('load', function(ev) {
+      // Initialize Flutter configuration
+      window._flutter = {
+        buildConfig: {
+          serviceWorkerVersion: serviceWorkerVersion,
+          serviceWorkerUrl: 'flutter_service_worker.js',
+          engineVersion: '{{flutter_engine_version}}',
+          entrypoint: 'main.dart.js',
+          buildMode: '{{flutter_build_mode}}',
+          baseUrl: '{{flutter_base_url}}',
+        }
+      };
+
+      // Wait for flutter.js to load
+      var script = document.createElement('script');
+      script.src = 'main.dart.js';
+      script.type = 'application/javascript';
+      script.onload = function() {
+        if (typeof _flutter !== 'undefined') {
+          _flutter.loader.load({
+            serviceWorker: {
+              serviceWorkerVersion: serviceWorkerVersion,
+            }
+          }).then(function(engineInitializer) {
+            return engineInitializer.initializeEngine();
+          }).then(function(appRunner) {
+            return appRunner.runApp();
+          }).catch(function(error) {
+            console.error('Error initializing Flutter:', error);
+          });
+        } else {
+          console.error('Flutter loader not found');
+        }
+      };
+      document.body.appendChild(script);
+    });
+  </script>
+</body>
+</html>
