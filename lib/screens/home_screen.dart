@@ -10,6 +10,8 @@ import '../screens/all_companies_screen.dart';
 import '../screens/all_posts_screen.dart';
 import '../screens/all_trends_screen.dart';
 import 'dart:ui';
+import '../services/trends_service.dart';
+import '../models/trend_model.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function() toggleTheme;
@@ -26,6 +28,72 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final TrendsService _trendsService = TrendsService();
+  List<TrendModel> _aiTrends = [];
+  bool _isLoading = true;
+  String? _error;
+
+  // Add state for search and posts
+  List<PostModel> _filteredPosts = List.from(dummyPosts);
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAITrends();
+  }
+
+  Future<void> _loadAITrends() async {
+    try {
+      final trends = await _trendsService.getTechTrends();
+      setState(() {
+        _aiTrends = trends;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      _searchQuery = value;
+      _filteredPosts = dummyPosts.where((post) =>
+        post.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+        post.content.toLowerCase().contains(_searchQuery.toLowerCase())
+      ).toList();
+    });
+  }
+
+  void _addDummyPost() {
+    setState(() {
+      final newPost = PostModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: 'New Insight',
+        content: 'This is a new custom insight.',
+        author: 'You',
+        date: DateTime.now().toIso8601String().split('T')[0],
+        category: 'Custom',
+        likes: 0,
+        comments: [],
+        imageUrl: '',
+        tags: ['Custom'],
+      );
+      dummyPosts.insert(0, newPost);
+      _filteredPosts.insert(0, newPost);
+    });
+  }
+
+  void _deletePost(String id) {
+    setState(() {
+      dummyPosts.removeWhere((post) => post.id == id);
+      _filteredPosts.removeWhere((post) => post.id == id);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -33,170 +101,130 @@ class _HomeScreenState extends State<HomeScreen> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              colorScheme.primary.withOpacity(0.1),
-              colorScheme.surface,
-              colorScheme.secondary.withOpacity(0.1),
-            ],
-          ),
-        ),
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              floating: true,
-              pinned: true,
-              stretch: true,
-              expandedHeight: 120,
-              backgroundColor: Colors.transparent,
-              flexibleSpace: ClipRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    color: colorScheme.surface.withOpacity(0.8),
-                  ),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            floating: true,
+            pinned: true,
+            stretch: true,
+            expandedHeight: 120,
+            backgroundColor: Colors.transparent,
+            flexibleSpace: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  color: colorScheme.surface.withOpacity(0.8),
                 ),
               ),
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Welcome to',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.7),
-                    ),
+            ),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Welcome to',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurface.withOpacity(0.7),
                   ),
-                  Text(
-                    'Startup Hub',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
+                ),
+                Text(
+                  'Startup Hub',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
                   ),
-                ],
-              ),
-              actions: [
-                IconButton(
-                  icon: Icon(
-                    widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                    color: colorScheme.primary,
-                  ),
-                  onPressed: widget.toggleTheme,
                 ),
               ],
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Trending AI Tech Section
-                    _buildSectionHeader(
+            actions: [
+              IconButton(
+                icon: Icon(
+                  widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                  color: colorScheme.primary,
+                ),
+                onPressed: widget.toggleTheme,
+              ),
+            ],
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(16.0),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                // Latest Posts Section
+                _buildSectionHeader(
+                  context,
+                  'Latest Insights',
+                  'View all',
+                  () {
+                    Navigator.push(
                       context,
-                      'Top 10 AI Tech Trends',
-                      'See all',
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AllTrendsScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 200,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          _buildTrendCard(
-                            context,
-                            'AI in Healthcare',
-                            'Revolutionizing patient care with AI diagnostics',
-                            Icons.health_and_safety,
-                          ),
-                          _buildTrendCard(
-                            context,
-                            'Quantum Computing',
-                            'Next-gen computing power for complex problems',
-                            Icons.computer,
-                          ),
-                          _buildTrendCard(
-                            context,
-                            'Edge AI',
-                            'Bringing AI to edge devices',
-                            Icons.devices,
-                          ),
-                          _buildTrendCard(
-                            context,
-                            'AI Ethics',
-                            'Ensuring responsible AI development',
-                            Icons.gavel,
-                          ),
-                        ],
+                      MaterialPageRoute(
+                        builder: (context) => AllPostsScreen(
+                          posts: dummyPosts,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                // Minimal search bar and + button
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        decoration: const InputDecoration(
+                          hintText: 'Search insights...',
+                          prefixIcon: Icon(Icons.search),
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                          contentPadding: EdgeInsets.all(8),
+                        ),
+                        onChanged: _onSearchChanged,
                       ),
                     ),
-                    const SizedBox(height: 32),
-
-                    // Latest Posts Section
-                    _buildSectionHeader(
-                      context,
-                      'Latest Insights',
-                      'View all',
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AllPostsScreen(
-                              posts: dummyPosts,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 300,
-                      child: PostCarousel(posts: dummyPosts),
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Featured Companies Section
-                    _buildFeaturedCompanies(),
-
-                    // Funding Highlights Section
-                    _buildSectionHeader(
-                      context,
-                      'Funding Highlights',
-                      'View all',
-                      () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AllCompaniesScreen(
-                              companies: dummyCompanies,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      height: 300,
-                      child: _buildFundingHighlights(context),
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      tooltip: 'Add Insight',
+                      onPressed: _addDummyPost,
                     ),
                   ],
                 ),
-              ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 300,
+                  child: PostCarousel(
+                    posts: _filteredPosts,
+                    onDelete: _deletePost,
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Featured Companies Section
+                _buildFeaturedCompanies(),
+
+                // Funding Highlights Section
+                _buildSectionHeader(
+                  context,
+                  'Funding Highlights',
+                  'View all',
+                  () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => AllCompaniesScreen(
+                          companies: dummyCompanies,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 300,
+                  child: _buildFundingHighlights(context),
+                ),
+              ]),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -256,30 +284,33 @@ class _HomeScreenState extends State<HomeScreen> {
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  icon,
-                  size: 32,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
+            child: SizedBox(
+              height: 150,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    icon,
+                    size: 32,
+                    color: colorScheme.primary,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurface.withOpacity(0.7),
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    description,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

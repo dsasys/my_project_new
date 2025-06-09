@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import '../services/trends_service.dart';
+import '../models/trend_model.dart';
 
 class AllTrendsScreen extends StatefulWidget {
   const AllTrendsScreen({Key? key}) : super(key: key);
@@ -9,159 +11,26 @@ class AllTrendsScreen extends StatefulWidget {
 }
 
 class _AllTrendsScreenState extends State<AllTrendsScreen> {
-  List<Map<String, dynamic>> trends = [
-    {
-      'title': 'AI in Healthcare',
-      'description': 'Revolutionizing patient care with AI diagnostics and treatment planning',
-      'icon': Icons.health_and_safety,
-      'category': 'Healthcare',
-      'marketSize': '\$45.2B',
-      'growthRate': '42.8%',
-      'keyPlayers': ['DeepMind Health', 'IBM Watson Health', 'Medtronic'],
-      'useCases': [
-        'Medical Imaging Analysis',
-        'Drug Discovery',
-        'Patient Risk Prediction',
-        'Virtual Health Assistants'
-      ],
-    },
-    {
-      'title': 'Quantum Computing',
-      'description': 'Next-gen computing power for complex problem-solving',
-      'icon': Icons.computer,
-      'category': 'Computing',
-      'marketSize': '\$8.6B',
-      'growthRate': '35.2%',
-      'keyPlayers': ['IBM', 'Google', 'Microsoft', 'D-Wave'],
-      'useCases': [
-        'Cryptography',
-        'Material Science',
-        'Financial Modeling',
-        'Climate Simulation'
-      ],
-    },
-    {
-      'title': 'Edge AI',
-      'description': 'Bringing AI capabilities to edge devices and IoT',
-      'icon': Icons.devices,
-      'category': 'IoT',
-      'marketSize': '\$15.7B',
-      'growthRate': '38.5%',
-      'keyPlayers': ['NVIDIA', 'Intel', 'Qualcomm', 'ARM'],
-      'useCases': [
-        'Smart Cameras',
-        'Autonomous Vehicles',
-        'Industrial IoT',
-        'Smart Home Devices'
-      ],
-    },
-    {
-      'title': 'AI Ethics',
-      'description': 'Ensuring responsible and ethical AI development',
-      'icon': Icons.gavel,
-      'category': 'Ethics',
-      'marketSize': '\$3.2B',
-      'growthRate': '28.4%',
-      'keyPlayers': ['OpenAI', 'Anthropic', 'DeepMind', 'Microsoft'],
-      'useCases': [
-        'Bias Detection',
-        'Privacy Protection',
-        'Transparency Tools',
-        'Compliance Monitoring'
-      ],
-    },
-    {
-      'title': 'Natural Language Processing',
-      'description': 'Advanced language understanding and generation',
-      'icon': Icons.chat,
-      'category': 'NLP',
-      'marketSize': '\$26.4B',
-      'growthRate': '40.3%',
-      'keyPlayers': ['OpenAI', 'Google', 'Microsoft', 'Hugging Face'],
-      'useCases': [
-        'Chatbots',
-        'Translation',
-        'Content Generation',
-        'Sentiment Analysis'
-      ],
-    },
-    {
-      'title': 'Computer Vision',
-      'description': 'Enhanced image and video analysis capabilities',
-      'icon': Icons.visibility,
-      'category': 'Vision',
-      'marketSize': '\$19.1B',
-      'growthRate': '36.7%',
-      'keyPlayers': ['NVIDIA', 'Intel', 'Google', 'Amazon'],
-      'useCases': [
-        'Facial Recognition',
-        'Object Detection',
-        'Medical Imaging',
-        'Autonomous Systems'
-      ],
-    },
-    {
-      'title': 'AI in Finance',
-      'description': 'Transforming financial services with AI',
-      'icon': Icons.attach_money,
-      'category': 'Finance',
-      'marketSize': '\$22.6B',
-      'growthRate': '39.2%',
-      'keyPlayers': ['Palantir', 'Bloomberg', 'JP Morgan', 'Goldman Sachs'],
-      'useCases': [
-        'Algorithmic Trading',
-        'Risk Assessment',
-        'Fraud Detection',
-        'Customer Service'
-      ],
-    },
-    {
-      'title': 'Robotics & AI',
-      'description': 'Integration of AI in advanced robotics',
-      'icon': Icons.smart_toy,
-      'category': 'Robotics',
-      'marketSize': '\$31.2B',
-      'growthRate': '33.8%',
-      'keyPlayers': ['Boston Dynamics', 'ABB', 'Fanuc', 'KUKA'],
-      'useCases': [
-        'Industrial Automation',
-        'Service Robots',
-        'Collaborative Robots',
-        'Autonomous Systems'
-      ],
-    },
-    {
-      'title': 'AI in Education',
-      'description': 'Personalized learning and educational tools',
-      'icon': Icons.school,
-      'category': 'Education',
-      'marketSize': '\$12.4B',
-      'growthRate': '45.2%',
-      'keyPlayers': ['Duolingo', 'Coursera', 'Udacity', 'Khan Academy'],
-      'useCases': [
-        'Adaptive Learning',
-        'Automated Grading',
-        'Student Analytics',
-        'Virtual Tutors'
-      ],
-    },
-    {
-      'title': 'AI in Manufacturing',
-      'description': 'Smart manufacturing and predictive maintenance',
-      'icon': Icons.factory,
-      'category': 'Manufacturing',
-      'marketSize': '\$16.8B',
-      'growthRate': '37.5%',
-      'keyPlayers': ['Siemens', 'GE', 'Bosch', 'Rockwell'],
-      'useCases': [
-        'Predictive Maintenance',
-        'Quality Control',
-        'Supply Chain Optimization',
-        'Process Automation'
-      ],
-    },
-  ];
+  final TrendsService _trendsService = TrendsService();
+  List<Map<String, dynamic>> trends = [];
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTrends();
+  }
+
+  void _fetchTrends() async {
+    try {
+      final fetchedTrends = await _trendsService.getTechTrends();
+      setState(() {
+        trends = fetchedTrends.map((trend) => trend.toJson()).toList();
+      });
+    } catch (e) {
+      print('Error fetching trends: $e');
+    }
+  }
 
   List<Map<String, dynamic>> get _filteredTrends {
     if (_searchQuery.isEmpty) return trends;

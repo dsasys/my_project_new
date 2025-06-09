@@ -101,62 +101,77 @@ class _NewsScreenState extends State<NewsScreen> with SingleTickerProviderStateM
         itemBuilder: (context, index) {
           final article = articles[index];
           return Card(
-            margin: const EdgeInsets.only(bottom: 16),
+            elevation: 2,
             child: InkWell(
-              onTap: () => _launchUrl(article.url),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (article.urlToImage.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                      child: Image.network(
-                        article.urlToImage,
-                        height: 200,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const SizedBox(
+              onTap: () async {
+                if (article.url != null) {
+                  final url = Uri.parse(article.url!);
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url);
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Could not open the article'),
+                        ),
+                      );
+                    }
+                  }
+                }
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (article.urlToImage != null && article.urlToImage!.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                        child: Image.network(
+                          article.urlToImage!,
                           height: 200,
-                          child: Center(child: Icon(Icons.error)),
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                         ),
                       ),
+                    const SizedBox(height: 12),
+                    Text(
+                      article.title ?? 'No title available',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    if (article.description != null && article.description!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        article.description!,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Row(
                       children: [
-                        Text(
-                          article.title,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          article.description,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              article.source,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey,
-                                  ),
+                        if (article.source.isNotEmpty) ...[
+                          Text(
+                            article.source,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.blue,
                             ),
-                            Text(
-                              article.publishedAt,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey,
-                                  ),
-                            ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
                       ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           );

@@ -12,6 +12,7 @@ import 'screens/funding_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/news_screen.dart';
+import 'screens/job_board_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -111,6 +112,7 @@ class _MainScreenState extends State<MainScreen> {
       HomeScreen(toggleTheme: widget.toggleTheme, isDarkMode: widget.isDarkMode),
       const SearchScreen(),
       const NewsScreen(),
+      const JobBoardScreen(),
       const TrendsScreen(),
       const FundingScreen(),
       const ProfileScreen(),
@@ -140,6 +142,10 @@ class _MainScreenState extends State<MainScreen> {
           NavigationDestination(
             icon: Icon(Icons.newspaper),
             label: 'News',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.work),
+            label: 'Jobs',
           ),
           NavigationDestination(
             icon: Icon(Icons.trending_up),

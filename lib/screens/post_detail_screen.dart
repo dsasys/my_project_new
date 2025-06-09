@@ -60,7 +60,7 @@ class PostDetailScreen extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.network(
-                    _randomUnsplashImage,
+                    'https://api.allorigins.win/raw?url=${Uri.encodeComponent(_randomUnsplashImage)}',
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
