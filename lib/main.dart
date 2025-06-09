@@ -74,10 +74,11 @@ class _MyAppState extends State<MyApp> {
             _isDarkMode ? ThemeData.dark().textTheme : ThemeData.light().textTheme,
           ),
         ),
-        initialRoute: '/',
+        initialRoute: '/login',
         routes: {
-          '/': (context) => const LoginScreen(),
+          '/login': (context) => const LoginScreen(),
           '/home': (context) => MainScreen(toggleTheme: toggleTheme, isDarkMode: _isDarkMode),
+          '/': (context) => const LoginScreen(), // Fallback route
         },
       ),
     );

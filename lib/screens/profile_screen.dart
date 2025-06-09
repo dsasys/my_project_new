@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:ui';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -832,15 +833,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              // Handle logout
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Logged out successfully'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
+            onPressed: () async {
+              try {
+                // Close the dialog
+                Navigator.pop(context);
+                
+                // Show loading indicator
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Row(
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Text('Logging out...'),
+                      ],
+                    ),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+
+                // Clear shared preferences
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.clear();
+
+                // Sign out from Firebase
+                await FirebaseAuth.instance.signOut();
+
+                // Navigate to login screen and clear all previous routes
+                if (context.mounted) {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/login',
+                    (route) => false,
+                  );
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error during logout: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                }
+              }
             },
             child: const Text(
               'Logout',

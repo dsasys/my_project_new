@@ -14,6 +14,8 @@ class AuthService extends ChangeNotifier {
         password: password,
       );
       await userCredential.user?.sendEmailVerification();
+      // Sign out after sending verification email
+      await signOut();
       notifyListeners();
       return userCredential;
     } on FirebaseAuthException catch (e) {
@@ -28,6 +30,16 @@ class AuthService extends ChangeNotifier {
         email: email,
         password: password,
       );
+      
+      // Check if email is verified
+      if (!userCredential.user!.emailVerified) {
+        // Send verification email again if not verified
+        await userCredential.user?.sendEmailVerification();
+        // Sign out since email is not verified
+        await signOut();
+        throw 'Please verify your email before signing in. A new verification email has been sent.';
+      }
+      
       notifyListeners();
       return userCredential;
     } on FirebaseAuthException catch (e) {
@@ -37,16 +49,42 @@ class AuthService extends ChangeNotifier {
 
   // Sign out
   Future<void> signOut() async {
-    await _auth.signOut();
-    notifyListeners();
+    try {
+      await _auth.signOut();
+      notifyListeners();
+    } catch (e) {
+      throw 'Error signing out. Please try again.';
+    }
   }
 
   // Send email verification
   Future<void> sendEmailVerification() async {
     try {
-      await currentUser?.sendEmailVerification();
+      if (currentUser != null && !currentUser!.emailVerified) {
+        await currentUser?.sendEmailVerification();
+      }
     } on FirebaseAuthException catch (e) {
       throw _handleAuthException(e);
+    }
+  }
+
+  // Send password reset email
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'user-not-found':
+          throw 'No user found with this email address.';
+        case 'invalid-email':
+          throw 'The email address is not valid.';
+        case 'user-disabled':
+          throw 'This user account has been disabled.';
+        default:
+          throw 'An error occurred while sending the password reset email.';
+      }
+    } catch (e) {
+      throw 'An unexpected error occurred. Please try again later.';
     }
   }
 
@@ -63,6 +101,10 @@ class AuthService extends ChangeNotifier {
         return 'The password provided is too weak.';
       case 'invalid-email':
         return 'The email address is not valid.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please try again later.';
       default:
         return 'An error occurred. Please try again.';
     }
