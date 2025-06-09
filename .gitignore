@@ -32,7 +32,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
-pubspec.lock
+# pubspec.lock  # Commented out to track this file
 
 # Web related
 

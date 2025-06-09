@@ -38,8 +38,8 @@ This Flutter web app showcases a dynamic news and trends feed using data. It is 
 2. **Push the Built Files to GitHub:**
    ```bash
    git add .
-   git commit -m "Update dummy URLs to real, existing URLs"
-   git push
+   git commit -m "Update README.md and remove build folder from Git tracking"
+   git push -u origin main
    ```
 
 3. **Deploy to GitHub Pages:**
