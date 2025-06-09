@@ -1,55 +1,75 @@
-class PostModel {
+class Post {
   final String id;
   final String title;
+  final String excerpt;
   final String content;
-  final String author;
-  final String date;
-  final String category;
-  final int likes;
-  final List<String> comments;
   final String imageUrl;
+  final DateTime createdAt;
   final List<String> tags;
-  bool bookmarked;
+  final String author;
+  final String category;
 
-  PostModel({
+  Post({
     required this.id,
     required this.title,
+    required this.excerpt,
     required this.content,
-    required this.author,
-    required this.date,
-    required this.category,
-    required this.likes,
-    required this.comments,
     required this.imageUrl,
+    required this.createdAt,
     required this.tags,
-    this.bookmarked = false,
+    required this.author,
+    required this.category,
   });
 
-  factory PostModel.fromJson(Map<String, dynamic> json) => PostModel(
-        id: json['id'],
-        title: json['title'],
-        content: json['content'],
-        author: json['author'],
-        date: json['date'],
-        category: json['category'],
-        likes: json['likes'],
-        comments: List<String>.from(json['comments'] ?? []),
-        imageUrl: json['imageUrl'],
-        tags: List<String>.from(json['tags'] ?? []),
-        bookmarked: json['bookmarked'] ?? false,
-      );
+  factory Post.fromJson(Map<String, dynamic> json) {
+    return Post(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      excerpt: json['excerpt'] as String,
+      content: json['content'] as String,
+      imageUrl: json['imageUrl'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      tags: List<String>.from(json['tags'] as List),
+      author: json['author'] as String,
+      category: json['category'] as String,
+    );
+  }
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'title': title,
-        'content': content,
-        'author': author,
-        'date': date,
-        'category': category,
-        'likes': likes,
-        'comments': comments,
-        'imageUrl': imageUrl,
-        'tags': tags,
-        'bookmarked': bookmarked,
-      };
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'excerpt': excerpt,
+      'content': content,
+      'imageUrl': imageUrl,
+      'createdAt': createdAt.toIso8601String(),
+      'tags': tags,
+      'author': author,
+      'category': category,
+    };
+  }
+
+  Post copyWith({
+    String? id,
+    String? title,
+    String? excerpt,
+    String? content,
+    String? imageUrl,
+    DateTime? createdAt,
+    List<String>? tags,
+    String? author,
+    String? category,
+  }) {
+    return Post(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      excerpt: excerpt ?? this.excerpt,
+      content: content ?? this.content,
+      imageUrl: imageUrl ?? this.imageUrl,
+      createdAt: createdAt ?? this.createdAt,
+      tags: tags ?? this.tags,
+      author: author ?? this.author,
+      category: category ?? this.category,
+    );
+  }
 } 

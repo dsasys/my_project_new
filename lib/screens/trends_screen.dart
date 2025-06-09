@@ -27,7 +27,7 @@ class _TrendsScreenState extends State<TrendsScreen> with SingleTickerProviderSt
 
   // Data structures
   Map<String, dynamic> _marketData = {};
-  List<TrendModel> _techTrends = [];
+  List<Trend> _techTrends = [];
   bool _isLoading = true;
   String? _error;
 
@@ -212,69 +212,33 @@ class _TrendsScreenState extends State<TrendsScreen> with SingleTickerProviderSt
           ),
         ),
         const SizedBox(height: 16),
-        ..._techTrends.map((trend) => Card(
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: _techTrends.length,
+          itemBuilder: (context, index) {
+            final trend = _techTrends[index];
+            return Card(
               margin: const EdgeInsets.only(bottom: 16),
               child: ListTile(
                 title: Text(trend.title),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    Text(trend.description),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).primaryColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            trend.category,
-                            style: TextStyle(
-                              color: Theme.of(context).primaryColor,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          trend.source,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                subtitle: Text(trend.description),
+                trailing: Chip(
+                  label: Text(trend.category),
+                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
                 ),
                 onTap: () async {
-                  final uri = Uri.parse(trend.url);
-                  try {
+                  if (trend.url.isNotEmpty) {
+                    final uri = Uri.parse(trend.url);
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                    } else {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Could not open the trend link.')),
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error opening link: \$e')),
-                      );
+                      await launchUrl(uri);
                     }
                   }
                 },
               ),
-            )),
+            );
+          },
+        ),
       ],
     );
   }

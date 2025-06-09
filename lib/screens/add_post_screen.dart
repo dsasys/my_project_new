@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
 import '../models/post_model.dart';
 import '../data/posts.dart';
 
 class AddPostScreen extends StatefulWidget {
-  final Function(PostModel)? onPostCreated;
+  final Function(Post)? onPostCreated;
 
   const AddPostScreen({
     super.key,
@@ -42,15 +43,14 @@ class _AddPostScreenState extends State<AddPostScreen> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
-      final newPost = PostModel(
+      final newPost = Post(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: _titleController.text,
+        excerpt: _contentController.text.substring(0, min(100, _contentController.text.length)) + '...',
         content: _contentController.text,
         author: 'Anonymous', // Default author
-        date: DateTime.now().toIso8601String().split('T')[0],
+        createdAt: DateTime.now(),
         category: _selectedCategory,
-        likes: 0,
-        comments: [],
         imageUrl: _imageUrlController.text.isEmpty 
             ? 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&auto=format&fit=crop'
             : _imageUrlController.text,

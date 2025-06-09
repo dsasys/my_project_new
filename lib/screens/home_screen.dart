@@ -12,6 +12,10 @@ import '../screens/all_trends_screen.dart';
 import 'dart:ui';
 import '../services/trends_service.dart';
 import '../models/trend_model.dart';
+import '../screens/add_post_screen.dart';
+import '../screens/post_detail_screen.dart';
+import 'dart:async';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function() toggleTheme;
@@ -29,18 +33,29 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TrendsService _trendsService = TrendsService();
-  List<TrendModel> _aiTrends = [];
+  List<Trend> _aiTrends = [];
   bool _isLoading = true;
   String? _error;
 
-  // Add state for search and posts
-  List<PostModel> _filteredPosts = List.from(dummyPosts);
+  final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  List<Post> _filteredPosts = List.from(dummyPosts);
+  List<Trend> _filteredTrends = [];
+  Timer? _debounce;
 
   @override
   void initState() {
     super.initState();
     _loadAITrends();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    _debounce?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadAITrends() async {
@@ -48,6 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final trends = await _trendsService.getTechTrends();
       setState(() {
         _aiTrends = trends;
+        _filteredTrends = trends;
         _isLoading = false;
       });
     } catch (e) {
@@ -58,33 +74,54 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _onSearchChanged(String value) {
-    setState(() {
-      _searchQuery = value;
-      _filteredPosts = dummyPosts.where((post) =>
-        post.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-        post.content.toLowerCase().contains(_searchQuery.toLowerCase())
-      ).toList();
+  void _onSearchChanged() {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      setState(() {
+        _searchQuery = _searchController.text;
+        _filterPosts();
+        _filterTrends();
+      });
     });
   }
 
-  void _addDummyPost() {
+  void _filterPosts() {
     setState(() {
-      final newPost = PostModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        title: 'New Insight',
-        content: 'This is a new custom insight.',
-        author: 'You',
-        date: DateTime.now().toIso8601String().split('T')[0],
-        category: 'Custom',
-        likes: 0,
-        comments: [],
-        imageUrl: '',
-        tags: ['Custom'],
-      );
-      dummyPosts.insert(0, newPost);
-      _filteredPosts.insert(0, newPost);
+      if (_searchQuery.isEmpty) {
+        _filteredPosts = List.from(dummyPosts);
+      } else {
+        _filteredPosts = dummyPosts.where((post) {
+          return post.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              post.content.toLowerCase().contains(_searchQuery.toLowerCase());
+        }).toList();
+      }
     });
+  }
+
+  void _filterTrends() {
+    setState(() {
+      if (_searchQuery.isEmpty) {
+        _filteredTrends = List.from(_aiTrends);
+      } else {
+        _filteredTrends = _aiTrends.where((trend) {
+          return trend.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+              trend.description.toLowerCase().contains(_searchQuery.toLowerCase());
+        }).toList();
+      }
+    });
+  }
+
+  void _addPost() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: const AddPostScreen(),
+      ),
+    );
   }
 
   void _deletePost(String id) {
@@ -149,41 +186,38 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.all(16.0),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                // Latest Posts Section
-                _buildSectionHeader(
-                  context,
-                  'Latest Insights',
-                  'View all',
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AllPostsScreen(
-                          posts: dummyPosts,
-                        ),
-                      ),
-                    );
-                  },
+                // Search Bar
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Search posts, trends, and more...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
-                // Minimal search bar and + button
+                const SizedBox(height: 24),
+                // Featured Posts
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        decoration: const InputDecoration(
-                          hintText: 'Search insights...',
-                          prefixIcon: Icon(Icons.search),
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                          contentPadding: EdgeInsets.all(8),
-                        ),
-                        onChanged: _onSearchChanged,
+                    Text(
+                      'Featured Posts',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.add),
-                      tooltip: 'Add Insight',
-                      onPressed: _addDummyPost,
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => AllPostsScreen(posts: _filteredPosts),
+                          ),
+                        );
+                      },
+                      child: const Text('View All'),
                     ),
                   ],
                 ),
@@ -192,291 +226,76 @@ class _HomeScreenState extends State<HomeScreen> {
                   height: 300,
                   child: PostCarousel(
                     posts: _filteredPosts,
-                    onDelete: _deletePost,
+                    onPostTap: (post) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PostDetailScreen(post: post),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: 32),
-
-                // Featured Companies Section
-                _buildFeaturedCompanies(),
-
-                // Funding Highlights Section
-                _buildSectionHeader(
-                  context,
-                  'Funding Highlights',
-                  'View all',
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => AllCompaniesScreen(
-                          companies: dummyCompanies,
-                        ),
+                // AI Trends
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'AI Trends',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
-                SizedBox(
-                  height: 300,
-                  child: _buildFundingHighlights(context),
-                ),
+                if (_isLoading)
+                  const Center(child: CircularProgressIndicator())
+                else if (_error != null)
+                  Center(
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  )
+                else
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _filteredTrends.length,
+                    itemBuilder: (context, index) {
+                      final trend = _filteredTrends[index];
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        child: ListTile(
+                          title: Text(trend.title),
+                          subtitle: Text(trend.description),
+                          trailing: Chip(
+                            label: Text(trend.category),
+                            backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                          ),
+                          onTap: () async {
+                            if (trend.url.isNotEmpty) {
+                              final uri = Uri.parse(trend.url);
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
+                              }
+                            }
+                          },
+                        ),
+                      );
+                    },
+                  ),
               ]),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildSectionHeader(
-    BuildContext context,
-    String title,
-    String actionText,
-    VoidCallback onAction,
-  ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-        TextButton(
-          onPressed: onAction,
-          child: Text(actionText),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTrendCard(
-    BuildContext context,
-    String title,
-    String description,
-    IconData icon,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return Container(
-      width: 280,
-      margin: const EdgeInsets.only(right: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorScheme.primary.withOpacity(0.1),
-            colorScheme.secondary.withOpacity(0.1),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.primary.withOpacity(0.2),
-        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addPost,
+        child: const Icon(Icons.add),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SizedBox(
-              height: 150,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    icon,
-                    size: 32,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    title,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    description,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurface.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFundingHighlights(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorScheme.primary.withOpacity(0.1),
-            colorScheme.secondary.withOpacity(0.1),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.primary.withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        children: [
-          _buildFundingHighlight(
-            context,
-            'TechVision AI',
-            'Series A',
-            '\$25M',
-            'Andreessen Horowitz',
-          ),
-          const Divider(),
-          _buildFundingHighlight(
-            context,
-            'GreenEnergy Solutions',
-            'Series B',
-            '\$40M',
-            'Tiger Global',
-          ),
-          const Divider(),
-          _buildFundingHighlight(
-            context,
-            'HealthTech Innovations',
-            'Series C',
-            '\$50M',
-            'General Catalyst',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFundingHighlight(
-    BuildContext context,
-    String company,
-    String round,
-    String amount,
-    String investor,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: colorScheme.primary.withOpacity(0.1),
-            child: Text(
-              company[0],
-              style: TextStyle(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  company,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  '$round • $amount',
-                  style: TextStyle(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            investor,
-            style: TextStyle(
-              color: colorScheme.onSurface.withOpacity(0.7),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeaturedCompanies() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Featured Companies',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              TextButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AllCompaniesScreen(
-                        companies: dummyCompanies,
-                      ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('View All'),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            return SizedBox(
-              height: constraints.maxWidth > 600 ? 450 : 600,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: dummyCompanies.length,
-                itemBuilder: (context, index) {
-                  return Container(
-                    width: constraints.maxWidth > 600 ? 320 : constraints.maxWidth - 32,
-                    margin: const EdgeInsets.only(right: 16),
-                    child: CompanyCard(
-                      company: dummyCompanies[index],
-                    ),
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      ],
     );
   }
 } 

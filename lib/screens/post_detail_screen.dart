@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/post_model.dart';
 
 class PostDetailScreen extends StatelessWidget {
-  final PostModel post;
+  final Post post;
 
   const PostDetailScreen({
     super.key,
@@ -60,7 +60,7 @@ class PostDetailScreen extends StatelessWidget {
                 fit: StackFit.expand,
                 children: [
                   Image.network(
-                    'https://api.allorigins.win/raw?url=${Uri.encodeComponent(_randomUnsplashImage)}',
+                    'https://api.allorigins.win/raw?url=${Uri.encodeComponent(post.imageUrl)}',
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
@@ -154,7 +154,7 @@ class PostDetailScreen extends StatelessWidget {
                           Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
                           const SizedBox(width: 4),
                           Text(
-                            post.date,
+                            post.createdAt.toString().split(' ')[0],
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 13,

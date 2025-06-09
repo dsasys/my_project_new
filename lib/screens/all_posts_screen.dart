@@ -7,7 +7,7 @@ import 'post_detail_screen.dart';
 import 'dart:ui';
 
 class AllPostsScreen extends StatefulWidget {
-  final List<PostModel> posts;
+  final List<Post> posts;
 
   const AllPostsScreen({
     Key? key,
@@ -23,7 +23,7 @@ class _AllPostsScreenState extends State<AllPostsScreen> {
   int _currentPage = 0;
   String _searchQuery = '';
 
-  List<PostModel> get _filteredPosts {
+  List<Post> get _filteredPosts {
     return widget.posts.where((post) {
       final matchesSearch = post.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           post.content.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -32,7 +32,7 @@ class _AllPostsScreenState extends State<AllPostsScreen> {
     }).toList();
   }
 
-  List<PostModel> get _paginatedPosts {
+  List<Post> get _paginatedPosts {
     final startIndex = _currentPage * _itemsPerPage;
     final endIndex = startIndex + _itemsPerPage;
     return _filteredPosts.sublist(
@@ -202,56 +202,38 @@ class _AllPostsScreenState extends State<AllPostsScreen> {
                       ),
                     );
                   },
+                  childCount: _paginatedPosts.length,
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.chevron_left),
-                      onPressed: _currentPage > 0
-                          ? () => _onPageChanged(_currentPage - 1)
-                          : null,
+            if (_totalPages > 1)
+              SliverPadding(
+                padding: const EdgeInsets.only(bottom: 16),
+                sliver: SliverToBoxAdapter(
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(_totalPages, (index) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.circle,
+                              size: 12,
+                              color: _currentPage == index
+                                  ? colorScheme.primary
+                                  : colorScheme.primary.withOpacity(0.3),
+                            ),
+                            onPressed: () => _onPageChanged(index),
+                          ),
+                        );
+                      }),
                     ),
-                    Text(
-                      'Page ${_currentPage + 1} of $_totalPages',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.chevron_right),
-                      onPressed: _currentPage < _totalPages - 1
-                          ? () => _onPageChanged(_currentPage + 1)
-                          : null,
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AddPostScreen(
-                onPostCreated: (newPost) {
-                  setState(() {
-                    // The post is already added to dummyPosts in AddPostScreen
-                    // Just trigger a rebuild to show the new post
-                  });
-                },
-              ),
-            ),
-          );
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Create Post'),
       ),
     );
   }

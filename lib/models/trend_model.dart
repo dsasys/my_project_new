@@ -1,4 +1,4 @@
-class TrendModel {
+class Trend {
   final String title;
   final String description;
   final String source;
@@ -6,7 +6,7 @@ class TrendModel {
   final String publishedAt;
   final String category;
 
-  TrendModel({
+  Trend({
     required this.title,
     required this.description,
     required this.source,
@@ -15,7 +15,7 @@ class TrendModel {
     required this.category,
   });
 
-  factory TrendModel.fromJson(Map<String, dynamic> json) => TrendModel(
+  factory Trend.fromJson(Map<String, dynamic> json) => Trend(
         title: json['title'] ?? '',
         description: json['description'] ?? '',
         source: json['source'] ?? '',

@@ -31,7 +31,7 @@ class TrendsService {
     }
   }
 
-  Future<List<TrendModel>> getTechTrends() async {
+  Future<List<Trend>> getTechTrends() async {
     try {
       final response = await http.get(
         Uri.parse('$_newsApiBaseUrl/top-headlines?category=technology&language=en&apiKey=$_newsApiKey'),
@@ -67,9 +67,9 @@ class TrendsService {
     };
   }
 
-  List<TrendModel> _processTechTrends(Map<String, dynamic> data) {
+  List<Trend> _processTechTrends(Map<String, dynamic> data) {
     final articles = data['articles'] as List;
-    return articles.map((article) => TrendModel(
+    return articles.map((article) => Trend(
       title: article['title'] ?? '',
       description: article['description'] ?? '',
       source: article['source']['name'] ?? '',
@@ -107,9 +107,9 @@ class TrendsService {
     };
   }
 
-  List<TrendModel> _getDummyTechTrends() {
+  List<Trend> _getDummyTechTrends() {
     return [
-      TrendModel(
+      Trend(
         title: 'AI Revolution Continues',
         description: 'Cloud services market expected to reach \$500B by 2025',
         source: 'TechCrunch',
@@ -117,7 +117,7 @@ class TrendsService {
         publishedAt: DateTime.now().subtract(const Duration(hours: 2)).toIso8601String(),
         category: 'Technology',
       ),
-      TrendModel(
+      Trend(
         title: 'Blockchain Adoption Grows',
         description: 'Major banks announce blockchain integration plans',
         source: 'CoinDesk',
@@ -125,7 +125,7 @@ class TrendsService {
         publishedAt: DateTime.now().subtract(const Duration(hours: 4)).toIso8601String(),
         category: 'Blockchain',
       ),
-      TrendModel(
+      Trend(
         title: '5G Rollout Accelerates',
         description: 'Global 5G subscriptions to reach 1B by 2024',
         source: 'The Verge',
